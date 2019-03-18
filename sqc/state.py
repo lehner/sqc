@@ -30,6 +30,26 @@ class state:
                 res+="|0>"
         return res
 
+    def measure(self, b):
+        A=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b != 0 ])
+        B=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b == 0 ])
+        assert(abs(1.0 - A - B) < 1e-14)
+        x=np.random.uniform()
+        if x < A:
+            # project to |1>
+            assert(A > 0.0)
+            l = 1.0 / np.sqrt(A)
+            v = np.array([ l*self.v[i] if i & 2**b != 0 else 0 for i in range(self.N) ])
+            r = 1
+        else:
+            # project to |0>
+            assert(B > 0.0)
+            l = 1.0 / np.sqrt(B)
+            v = np.array([ l*self.v[i] if i & 2**b == 0 else 0 for i in range(self.N) ])
+            r = 0
+
+        return (state(self.nbits, v=v, basis=self.basis),r)
+
     def __str__(self):
         coef=dict([ (i,"%s" % (str(c))) for (i,c) in enumerate(self.v) if abs(c) != 0.0 ])
         if len(coef) == 0:

@@ -44,6 +44,14 @@ class operator:
     def I(self, i):
         return self.gate1(i, stock_I)
 
+    def _u3v(self, theta, phi, lam):
+        return np.array( [ [ np.cos(theta/2.0), -np.exp(1j*lam)*np.sin(theta/2.0) ],
+                           [ np.exp(1j*phi)*np.sin(theta/2.0), np.exp(1j*(lam+phi))*np.cos(theta/2.0) ] ] )
+
+    def u3(self, i, theta, phi, lam):
+        u3v=self._u3v(theta,phi,lam)
+        return self.gate1(i, u3v)
+
     def _idx2bit(self, i):
         return [ (i & 2**l) != 0 for l in range(self.nbits) ]
 
