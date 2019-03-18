@@ -11,7 +11,7 @@ s=s.clone()
 o=sqc.operator(Nbits)
 
 #o=o.H(1)
-o=o.u3(1,0.5,0.222,0.315)
+o=o.u3(1,0.9,0.5222,0.315)
 
 print o.nonunitarity()
 print s, "\n--"
@@ -19,8 +19,9 @@ s=o * s
 
 print s, "\n--"
 
-for n in range(10):
+for n in range(20):
     sp,v1=s.measure(1)
-    print sp, v1, "\n\n"
+    spp,v0=sp.measure(0)
+    print spp, v0, v1, "\n\n"
 
 

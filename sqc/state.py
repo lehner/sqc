@@ -8,7 +8,7 @@ class state:
         self.nbits = nbits
         self.N = 2**nbits
         if v == None:
-            self.v = np.array(([ 0.0 ] * (self.N - 1)) + [ 1.0 ], dtype=np.cdouble)
+            self.v = np.array([ 1.0 ] + ([ 0.0 ] * (self.N - 1)), dtype=np.cdouble)
         else:
             self.v = np.array(v)
         if basis == None:
@@ -31,8 +31,8 @@ class state:
         return res
 
     def measure(self, b):
-        A=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b != 0 ])
-        B=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b == 0 ])
+        A=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b != 0 ]).real
+        B=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b == 0 ]).real
         assert(abs(1.0 - A - B) < 1e-14)
         x=np.random.uniform()
         if x < A:
