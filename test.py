@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sqc
+import sqc, sys
 
 Nbits=3
 
@@ -10,8 +10,8 @@ s=s.clone()
 
 o=sqc.operator(Nbits)
 
-#o=o.H(1)
-o=o.u3(1,0.9,0.5222,0.315)
+o=o.H(0).CNOT(0,1)
+#o=o.u3(1,0.9,0.5222,0.315)
 
 print o.nonunitarity()
 print s, "\n--"

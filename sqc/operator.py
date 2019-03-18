@@ -10,6 +10,12 @@ stock_I=np.array([ [ 1,0], [0,1] ])
 stock_X=np.array([ [ 0,1], [1,0] ])
 stock_Y=np.array([ [ 0,-1j], [1j,0] ])
 
+stock_CNOT=np.array( [ [1,0,0,0],
+                       [0,1,0,0],
+                       [0,0,0,1],
+                       [0,0,1,0] ] )
+
+
 class operator:
     def __init__(self, nbits, m = None):
         self.nbits = nbits
@@ -44,6 +50,10 @@ class operator:
     def I(self, i):
         return self.gate1(i, stock_I)
 
+    # i is control bit and j is target bit
+    def CNOT(self, i, j):
+        return self.gate2(i, j, stock_CNOT)
+
     def _u3v(self, theta, phi, lam):
         return np.array( [ [ np.cos(theta/2.0), -np.exp(1j*lam)*np.sin(theta/2.0) ],
                            [ np.exp(1j*phi)*np.sin(theta/2.0), np.exp(1j*(lam+phi))*np.cos(theta/2.0) ] ] )
@@ -75,8 +85,23 @@ class operator:
         return self
 
     def gate1(self, i, b):
+        assert(self.N % 2 == 0)
         P=self._swapmat(0,i)
         o=np.identity(self.N / 2)
+        t=np.dot(np.dot(np.transpose(P),np.concatenate(np.concatenate(np.multiply.outer(o,b),-2),-1)),P)
+        r=operator(self.nbits, m = np.dot(t,self.m))
+        r._chop()
+        return r
+
+    def gate2(self, i, j, b):
+        assert(i!=j)
+        assert(self.N % 4 == 0)
+
+        P=self._swapmat(1,i)
+        if j == 1:
+            j=i
+        P=np.dot(self._swapmat(0,j),P)
+        o=np.identity(self.N / 4)
         t=np.dot(np.dot(np.transpose(P),np.concatenate(np.concatenate(np.multiply.outer(o,b),-2),-1)),P)
         r=operator(self.nbits, m = np.dot(t,self.m))
         r._chop()
