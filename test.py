@@ -5,23 +5,15 @@ Nbits=3
 
 sqc.seed(13)
 
-s=sqc.state(Nbits)
-s=s.clone()
+s=sqc.operator(Nbits).H(0).CNOT(0,1) * sqc.state(Nbits)
 
-o=sqc.operator(Nbits)
-
-o=o.H(0).CNOT(0,1)
-#o=o.u3(1,0.9,0.5222,0.315)
-
-print o.nonunitarity()
-print s, "\n--"
-s=o * s
-
-print s, "\n--"
+print s
 
 for n in range(20):
-    sp,v1=s.measure(1)
-    spp,v0=sp.measure(0)
-    print spp, v0, v1, "\n\n"
+    sp0,v0=s.measure(0)
+    sp1,v1=sp0.measure(1)
+    sp2,v2=sp1.measure(2)
+    
+    print sp2, v2,v1,v0, "\n\n"
 
 

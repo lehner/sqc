@@ -25,9 +25,9 @@ class state:
         for j in range(self.nbits):
             b=2**j
             if i & b == b:
-                res+="|1>"
+                res="|1>"+res
             else:
-                res+="|0>"
+                res="|0>"+res
         return res
 
     def measure(self, b):
