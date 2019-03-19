@@ -7,7 +7,7 @@ As an example, creating an entangled Bell state and
 performing ten classical measurements can be done
 by the simple code
 
-```
+```python
 import sqc
 
 Nbits=2
