@@ -10,6 +10,7 @@ stock_I=np.array([ [ 1,0], [0,1] ])
 stock_X=np.array([ [ 0,1], [1,0] ])
 stock_Y=np.array([ [ 0,-1j], [1j,0] ])
 
+# control bit is 1, target bit is 0
 stock_CNOT=np.array( [ [1,0,0,0],
                        [0,1,0,0],
                        [0,0,0,1],
@@ -54,6 +55,9 @@ class operator:
     def CNOT(self, i, j):
         return self.gate2(i, j, stock_CNOT)
 
+    def CX(self, i, j):
+        return self.CNOT(i,j)
+
     def _u3v(self, theta, phi, lam):
         return np.array( [ [ np.cos(theta/2.0), -np.exp(1j*lam)*np.sin(theta/2.0) ],
                            [ np.exp(1j*phi)*np.sin(theta/2.0), np.exp(1j*(lam+phi))*np.cos(theta/2.0) ] ] )
@@ -61,6 +65,33 @@ class operator:
     def u3(self, i, theta, phi, lam):
         u3v=self._u3v(theta,phi,lam)
         return self.gate1(i, u3v)
+
+    def u2(self, i, phi, lam):
+        return self.u3(i, np.pi/2.0,phi,lam)
+
+    def u1(self, i, lam):
+        return self.u3(i, 0.0, 0.0, lam)
+
+    def S(self, i):
+        return self.u1(i, np.pi/2.0)
+
+    def Sdg(self, i):
+        return self.u1(i, -np.pi/2.0)
+
+    def T(self, i):
+        return self.u1(i, np.pi/4.0)
+
+    def Tdg(self, i):
+        return self.u1(i, -np.pi/4.0)
+
+    def Rx(self, i, theta):
+        return self.u3(i,theta, -np.pi/2.0, np.pi/2.0) 
+
+    def Ry(self, i, theta):
+        return self.u3(i,theta, 0.0, 0.0)
+
+    def Rz(self, i, phi):
+        return self.u1(i, phi)
 
     def _idx2bit(self, i):
         return [ (i & 2**l) != 0 for l in range(self.nbits) ]
