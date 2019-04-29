@@ -48,6 +48,9 @@ class operator:
     def X(self, i):
         return self.gate1(i, stock_X)
 
+    def NOT(self, i):
+        return self.gate1(i, stock_X)
+
     def I(self, i):
         return self.gate1(i, stock_I)
 
