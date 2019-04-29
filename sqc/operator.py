@@ -2,7 +2,7 @@
 # Christoph Lehner 2019
 #
 import numpy as np
-from state import state
+from sqc.state import state
 
 stock_H=1.0 / np.sqrt(2.0) * np.array([ [1,1], [1,-1] ])
 stock_Z=np.array([ [ 1,0], [0,-1] ])
@@ -118,7 +118,7 @@ class operator:
     def gate1(self, i, b):
         assert(self.N % 2 == 0)
         P=self._swapmat(0,i)
-        o=np.identity(self.N / 2)
+        o=np.identity(self.N // 2)
         t=np.dot(np.dot(np.transpose(P),np.concatenate(np.concatenate(np.multiply.outer(o,b),-2),-1)),P)
         r=operator(self.nbits, m = np.dot(t,self.m))
         r._chop()
@@ -132,7 +132,7 @@ class operator:
         if j == 1:
             j=i
         P=np.dot(self._swapmat(0,j),P)
-        o=np.identity(self.N / 4)
+        o=np.identity(self.N // 4)
         t=np.dot(np.dot(np.transpose(P),np.concatenate(np.concatenate(np.multiply.outer(o,b),-2),-1)),P)
         r=operator(self.nbits, m = np.dot(t,self.m))
         r._chop()

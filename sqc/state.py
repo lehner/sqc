@@ -25,10 +25,10 @@ class state:
         for j in range(self.nbits):
             b=2**j
             if i & b == b:
-                res="|1>"+res
+                res="1"+res
             else:
-                res="|0>"+res
-        return res
+                res="0"+res
+        return "|" + res + ">"
 
     def measure(self, b):
         A=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b != 0 ]).real
@@ -58,3 +58,6 @@ class state:
         slen=max([ len(c) for c in coef.values() ])
         lines=[ "%s%s * %s" % (coef[i]," "*(slen-len(coef[i])),self.basis[i]) for i in coef ]
         return "   " + "\n + ".join(lines)
+
+    def __repr__(self):
+        return self.__str__()

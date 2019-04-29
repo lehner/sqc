@@ -7,7 +7,8 @@ Nbits=2
 s=sqc.operator(Nbits).H(0).CNOT(0,1) * sqc.state(Nbits)
 
 # Print state
-print "Bell state\n", s
+print("Bell state")
+print(s)
 
 # Perform 10 measurements
 for n in range(10):
@@ -15,4 +16,4 @@ for n in range(10):
     s1,v1=s0.measure(1)
     
     # And print results of state and classical bits
-    print "Measurement #", n, " ", s1, v1, v0
+    print("Measurement # %d: %s | %d%d" % (n,s1,v1,v0))
