@@ -21,7 +21,7 @@ class operator:
     def __init__(self, nbits, m = None):
         self.nbits = nbits
         self.N = 2**nbits
-        if m != None:
+        if not m is None:
             self.m = m
         else:
             self.m = np.identity(self.N)

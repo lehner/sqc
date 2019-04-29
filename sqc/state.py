@@ -7,11 +7,11 @@ class state:
     def __init__(self, nbits, v = None, basis = None):
         self.nbits = nbits
         self.N = 2**nbits
-        if v == None:
+        if v is None:
             self.v = np.array([ 1.0 ] + ([ 0.0 ] * (self.N - 1)), dtype=np.cdouble)
         else:
             self.v = np.array(v)
-        if basis == None:
+        if basis is None:
             self.basis = [ self.default_basis_string(i) for i in range(self.N) ]
         else:
             self.basis = basis
