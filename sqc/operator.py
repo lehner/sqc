@@ -116,6 +116,7 @@ class operator:
     def _chop(self):
         tol = 1e-14
         self.m[abs(self.m) < tol] = 0.0
+        self.m = np.real_if_close(self.m,tol=100)
         return self
 
     def gate1(self, i, b):
