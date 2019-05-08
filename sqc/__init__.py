@@ -8,12 +8,14 @@ from sqc.operator import operator
 def seed(s):
     np.random.seed(s)
 
-def sample(s, n):
+def sample(s, n, mask = None):
     rc={}
+    if mask is None:
+        mask=range(s.nbits)
     for i in range(n):
         v=0
         s0=s
-        for j in range(s.nbits):
+        for j in mask:
             s1,v1=s0.measure(j)
             v=v + 2**j * v1
             s0=s1
