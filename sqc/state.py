@@ -3,6 +3,28 @@
 #
 import numpy as np
 
+def fmtstr(c):
+    eps=1e-15
+    if type(c) == type(0.0):
+        r=c
+        i=0
+    else:
+        r=c.real
+        i=c.imag
+    if abs(r) > eps:
+        if i > eps:
+            return "(%g+%gj)" % (r,i)
+        elif i < -eps:
+            return "(%g%gj)" % (r,i)
+        else:
+            return "%g" % r
+    else:
+        if abs(i) > eps:
+            return "%gj" % i
+        else:
+            return "0"
+
+
 class state:
     def __init__(self, nbits, v = None, basis = None):
         self.nbits = nbits
@@ -51,7 +73,7 @@ class state:
         return (state(self.nbits, v=v, basis=self.basis),r)
 
     def __str__(self):
-        coef=dict([ (i,"%s" % (str(c))) for (i,c) in enumerate(self.v) if abs(c) != 0.0 ])
+        coef=dict([ (i,"%s" % (fmtstr(c))) for (i,c) in enumerate(self.v) if abs(c) > 1e-15 ])
         if len(coef) == 0:
             return "0"
 
