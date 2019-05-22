@@ -15,9 +15,9 @@ def sample(s, n, mask = None):
     for i in range(n):
         v=0
         s0=s
-        for j in mask:
+        for l,j in enumerate(mask):
             s1,v1=s0.measure(j)
-            v=v + 2**j * v1
+            v=v + 2**l * v1
             s0=s1
         if not v in rc:
             rc[v]=1

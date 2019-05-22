@@ -2,142 +2,126 @@
 # Christoph Lehner 2019
 #
 import numpy as np
+import copy
+import time
 from sqc.state import state
 
-stock_H=1.0 / np.sqrt(2.0) * np.array([ [1,1], [1,-1] ])
-stock_Z=np.array([ [ 1,0], [0,-1] ])
-stock_I=np.array([ [ 1,0], [0,1] ])
-stock_X=np.array([ [ 0,1], [1,0] ])
-stock_Y=np.array([ [ 0,-1j], [1j,0] ])
+def _notbit(l,i):
+    return l ^ (2**i)
 
-# control bit is 1, target bit is 0
-stock_CNOT=np.array( [ [1,0,0,0],
-                       [0,1,0,0],
-                       [0,0,0,1],
-                       [0,0,1,0] ] )
+def getbit(l,i):
+    return 1 if (l & 2**i != 0) else 0
 
+def setbit(l,i,v):
+    m = 2**i
+    l &= ~m
+    if v:
+        l |= m
+    return l
+
+_cache={}
+def _cache_init(nbits):
+    p=[1.0,-1.0]
+    N=2**nbits
+    if not nbits in _cache:
+        c={}
+        c["notmask"]=[ np.array([ _notbit(l,i) for l in range(N) ]) for i in range(nbits) ]
+        c["cnotmask"]=[ [ np.array([ _notbit(l,j) if getbit(l,i) else l for l in range(N) ]) for j in range(nbits) ] for i in range(nbits) ]
+        c["onemask"]=[ np.array([ 1.0 if l & 2**i != 0 else 0.0 for l in range(N) ]) for i in range(nbits) ]
+        c["zeromask"]=[ np.array([ 1.0 if l & 2**i == 0 else 0.0 for l in range(N) ]) for i in range(nbits) ]
+        c["sbmask0"]=[ np.array([ setbit(l,i,0) for l in range(N) ]) for i in range(nbits) ]
+        c["sbmask1"]=[ np.array([ setbit(l,i,1) for l in range(N) ]) for i in range(nbits) ]
+        c["hmask"]=[ np.array([ p[getbit(l,i)] for l in range(N) ]) for i in range(nbits) ]
+        _cache[nbits] = c
+
+def _H(i,s,o):
+    n=s.nbits
+    c=1.0/2.0**0.5
+    return state(n,c*(s.v[o.sbmask0[i]] + o.hmask[i]*s.v[o.sbmask1[i]]),basis=s.basis)
+
+def _X(i,s,o):
+    n=s.nbits
+    return state(n,s.v[o.notmask[i]],basis=s.basis)
+
+def _Rz(i,phi,s,o):
+    n=s.nbits
+    return state(n,(o.onemask[i]*np.exp(1j*phi)
+                    + o.zeromask[i])*s.v,basis=s.basis)
+
+def _CNOT(i,j,s,o): # i is control, j is target
+    n=s.nbits
+    return state(n,s.v[o.cnotmask[i][j]],basis=s.basis)
 
 class operator:
     def __init__(self, nbits, m = None):
+        global _cache
         self.nbits = nbits
         self.N = 2**nbits
         if not m is None:
             self.m = m
         else:
-            self.m = np.identity(self.N)
+            self.m = []
+
+        _cache_init(self.nbits)
+        self.notmask = _cache[self.nbits]["notmask"]
+        self.cnotmask = _cache[self.nbits]["cnotmask"]
+        self.onemask = _cache[self.nbits]["onemask"]
+        self.zeromask = _cache[self.nbits]["zeromask"]
+        self.sbmask0 = _cache[self.nbits]["sbmask0"]
+        self.sbmask1 = _cache[self.nbits]["sbmask1"]
+        self.hmask = _cache[self.nbits]["hmask"]
+        self.verbose = False
+        self.cache={}
 
     def clone(self):
-        return operator(self.nbits, self.m.copy())
+        return operator(self.nbits, copy.deepcopy(self.m))
 
     def __mul__(self, s):
         assert(s.nbits == self.nbits)
-        return state(self.nbits,v=np.dot(self.m,s.v),basis=s.basis)
+        timing={}
+        count={}
+        for i,ops in enumerate(self.m):
+            t0=time.time()
+            tag=ops[2]
+            s=ops[0](*ops[1],s,self)
+            if i % 100 == 0:
+                s._chop()
+            t1=time.time()
+            if not tag in timing:
+                timing[tag]=0.0
+            if not tag in count:
+                count[tag]=0
+            timing[tag]+=t1-t0
+            count[tag]+=1
+        if self.verbose:
+            print("-----------------------------------------------------------")
+            print(" Ran circuit of length=%d" % len(self.m))
+            print("-----------------------------------------------------------")
+            for tag in count:
+                print(" - %d %s with total time of %gs" % (count[tag],tag,timing[tag]))
+            print("-----------------------------------------------------------")
+        return s
 
-    def nonunitarity(self):
-        return np.linalg.norm(np.dot(self.m,np.transpose(np.conjugate(self.m))) - np.identity(self.N))
+    def __add__(self, o):
+        assert(self.nbits == o.nbits)
+        return operator(self.nbits, self.m + o.m )
+
+    def op(self,_f,_a,_s):
+        return operator(self.nbits, self.m + [ (_f,_a,_s) ] )
 
     def H(self, i):
-        return self.gate1(i, stock_H)
-
-    def Z(self, i):
-        return self.gate1(i, stock_Z)
-
-    def Y(self, i):
-        return self.gate1(i, stock_Y)
-
-    def X(self, i):
-        return self.gate1(i, stock_X)
+        return self.op(_H,[i],"H")
 
     def NOT(self, i):
-        return self.gate1(i, stock_X)
+        return self.op(_X,[i],"X")
 
-    def I(self, i):
-        return self.gate1(i, stock_I)
+    def X(self, i):
+        return self.NOT(i)
 
     # i is control bit and j is target bit
     def CNOT(self, i, j):
-        return self.gate2(i, j, stock_CNOT)
-
-    def CX(self, i, j):
-        return self.CNOT(i,j)
-
-    def _u3v(self, theta, phi, lam):
-        return np.array( [ [ np.cos(theta/2.0), -np.exp(1j*lam)*np.sin(theta/2.0) ],
-                           [ np.exp(1j*phi)*np.sin(theta/2.0), np.exp(1j*(lam+phi))*np.cos(theta/2.0) ] ] )
-
-    def u3(self, i, theta, phi, lam):
-        u3v=self._u3v(theta,phi,lam)
-        return self.gate1(i, u3v)
-
-    def u2(self, i, phi, lam):
-        return self.u3(i, np.pi/2.0,phi,lam)
-
-    def u1(self, i, lam):
-        return self.u3(i, 0.0, 0.0, lam)
-
-    def S(self, i):
-        return self.u1(i, np.pi/2.0)
-
-    def Sdg(self, i):
-        return self.u1(i, -np.pi/2.0)
-
-    def T(self, i):
-        return self.u1(i, np.pi/4.0)
-
-    def Tdg(self, i):
-        return self.u1(i, -np.pi/4.0)
-
-    def Rx(self, i, theta):
-        return self.u3(i,theta, -np.pi/2.0, np.pi/2.0) 
-
-    def Ry(self, i, theta):
-        return self.u3(i,theta, 0.0, 0.0)
+        assert(i!=j)
+        return self.op(_CNOT,[i,j],"CNOT")
 
     def Rz(self, i, phi):
-        return self.u1(i, phi)
-
-    def _idx2bit(self, i):
-        return [ (i & 2**l) != 0 for l in range(self.nbits) ]
-
-    def _bit2idx(self, b):
-        return sum([ 2**i if b[i] else 0 for i in range(self.nbits) ])
-
-    def _swapbit(self, l, i, j):
-        c=[ a for a in l ]
-        t=c[i]
-        c[i]=c[j]
-        c[j]=t
-        return c
-        
-    def _swapmat(self, i, j):
-        order=[ self._bit2idx(self._swapbit(self._idx2bit(b),i,j)) for b in range(self.N) ]
-        return np.array( [ [ 1.0 if order[a] == b else 0.0 for a in range(self.N) ] for b in range(self.N) ] )
-        
-    def _chop(self):
-        tol = 1e-14
-        self.m[abs(self.m) < tol] = 0.0
-        self.m = np.real_if_close(self.m,tol=100)
-        return self
-
-    def gate1(self, i, b):
-        assert(self.N % 2 == 0)
-        P=self._swapmat(0,i)
-        o=np.identity(self.N // 2)
-        t=np.dot(np.dot(np.transpose(P),np.concatenate(np.concatenate(np.multiply.outer(o,b),-2),-1)),P)
-        r=operator(self.nbits, m = np.dot(t,self.m))
-        r._chop()
-        return r
-
-    def gate2(self, i, j, b):
-        assert(i!=j)
-        assert(self.N % 4 == 0)
-
-        P=self._swapmat(1,i)
-        if j == 1:
-            j=i
-        P=np.dot(self._swapmat(0,j),P)
-        o=np.identity(self.N // 4)
-        t=np.dot(np.dot(np.transpose(P),np.concatenate(np.concatenate(np.multiply.outer(o,b),-2),-1)),P)
-        r=operator(self.nbits, m = np.dot(t,self.m))
-        r._chop()
-        return r
+        return self.op(_Rz,[i,phi],"Rz")

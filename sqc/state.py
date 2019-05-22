@@ -4,7 +4,7 @@
 import numpy as np
 
 def fmtstr(c):
-    eps=1e-15
+    eps=1e-13
     if type(c) == type(0.0):
         r=c
         i=0
@@ -17,7 +17,10 @@ def fmtstr(c):
         elif i < -eps:
             return "(%g%gj)" % (r,i)
         else:
-            return "%g" % r
+            if r > 0.0:
+                return "%g" % r
+            else:
+                return "(%g)" % r
     else:
         if abs(i) > eps:
             return "%gj" % i
@@ -52,6 +55,13 @@ class state:
                 res="0"+res
         return "|" + res + ">"
 
+    def _chop(self):
+        tol = 1e-14
+        self.v[abs(self.v) < tol] = 0.0
+        self.v = np.real_if_close(self.v,tol=100)
+        self.v /= np.sqrt(np.linalg.norm(self.v))
+        return self
+
     def measure(self, b):
         A=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b != 0 ]).real
         B=sum([ self.v[i]*self.v[i].conj() for i in range(self.N) if i & 2**b == 0 ]).real
@@ -73,7 +83,7 @@ class state:
         return (state(self.nbits, v=v, basis=self.basis),r)
 
     def __str__(self):
-        coef=dict([ (i,"%s" % (fmtstr(c))) for (i,c) in enumerate(self.v) if abs(c) > 1e-15 ])
+        coef=dict([ (i,"%s" % (fmtstr(c))) for (i,c) in enumerate(self.v) if abs(c) > 1e-13 ])
         if len(coef) == 0:
             return "0"
 
