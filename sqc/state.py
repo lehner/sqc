@@ -35,7 +35,7 @@ class state:
         if v is None:
             self.v = np.array([ 1.0 ] + ([ 0.0 ] * (self.N - 1)), dtype=np.cdouble)
         else:
-            self.v = np.array(v)
+            self.v = np.array(v, dtype=np.cdouble)
         if basis is None:
             self.basis = [ self.default_basis_string(i) for i in range(self.N) ]
         else:
@@ -93,3 +93,17 @@ class state:
 
     def __repr__(self):
         return self.__str__()
+
+    def _idx(self, pos):
+        if type(pos) == type(0):
+            return pos
+        elif (type(pos) == type([]) or type(pos) == type(())) and type(pos[0]) == type(0) and len(pos) == self.nbits:
+            return sum([ pos[self.nbits - 1 -j]*2**j for j in range(self.nbits) ])
+        else:
+            raise Exception("Unknown type of position: %s" % str(pos))
+
+    def __getitem__(self, pos):
+        return self.v[self._idx(pos)]
+
+    def __setitem__(self, pos, val):
+        self.v[self._idx(pos)] = val
