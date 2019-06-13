@@ -4,7 +4,9 @@ import sqc
 Nbits=3
 
 # Create Greenberger-Horne-Zeilinger state
-s=sqc.operator(Nbits).H(0).CNOT(0,1).CNOT(0,2) * sqc.state(Nbits)
+op=sqc.operator(Nbits).H(0).CNOT(0,1).CNOT(0,2)
+print(op.toQASM())
+s=op * sqc.state(Nbits)
 
 # Print state
 print("GHZ state")

@@ -3,6 +3,7 @@
 #
 import numpy as np
 from sqc.state import state
+from sqc.ensemble import ensemble
 from sqc.operator import operator
 
 def seed(s):

@@ -5,6 +5,7 @@ import numpy as np
 import copy
 import time
 from sqc.state import state
+from sqc.ensemble import ensemble
 
 def _notbit(l,i):
     return l ^ (2**i)
@@ -77,6 +78,9 @@ class operator:
         return operator(self.nbits, copy.deepcopy(self.m))
 
     def __mul__(self, s):
+        if type(s) == ensemble:
+            return ensemble([ (e[0], self*e[1]) for e in s.states ])
+        assert(type(s) == state)
         assert(s.nbits == self.nbits)
         timing={}
         count={}
@@ -125,3 +129,24 @@ class operator:
 
     def Rz(self, i, phi):
         return self.op(_Rz,[i,phi],"Rz")
+
+    def toQASM(self, measure = True, header = "IBM"):
+        r=  "OPENQASM 2.0;\n"
+        if header == "IBM":
+            r=r+"include \"qelib1.inc\";\n"
+        r=r+"qreg qr[%d];\n" % self.nbits
+        r=r+"creg cr[%d];\n" % self.nbits
+        for ops in self.m:
+            if ops[2] == "H":
+                r=r+"h qr[%d];\n" % ops[1][0]
+            elif ops[2] == "X":
+                r=r+"x qr[%d];\n" % ops[1][0]
+            elif ops[2] == "Rz":
+                r=r+"rz(%.15g*pi) qr[%d];\n" % (ops[1][1]/np.pi,ops[1][0])
+            elif ops[2] == "CNOT":
+                r=r+"cx qr[%d],qr[%d];\n" % (ops[1][0],ops[1][1])
+            else:
+                assert(0)
+        if measure:
+            r=r+"measure qr -> cr;\n"
+        return r
