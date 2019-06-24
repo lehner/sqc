@@ -48,6 +48,10 @@ def qubit_depol(i, p, s, o):
           one_qubit_odiag(i, s, fac_x, fac_x, o),
           one_qubit_odiag(i, s, -1j*fac_y, 1j*fac_y, o) ] )    
 
+def qubit_depol_two(i, j, p, s, o):
+    # for now just depol two qubits individually
+    return qubit_depol(i, p, qubit_depol(j, p, s, o), o)
+
 def simple(qubit_readout_errors, T1, gate_times, gate_depolarization_p):
     ng = {
         "H" : lambda f, p, s, o: qubit_depol(p[0], 1-gate_depolarization_p["H"], qubit_relax(p[0],gate_times["H"] / T1, f(*p,s,o), o), o),
