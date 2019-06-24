@@ -5,7 +5,6 @@ import numpy as np
 import copy
 import time
 from sqc.state import state
-from sqc.ensemble import ensemble
 
 def _notbit(l,i):
     return l ^ (2**i)
@@ -78,8 +77,6 @@ class operator:
         return operator(self.nbits, copy.deepcopy(self.m))
 
     def __mul__(self, s):
-        if type(s) == ensemble:
-            return ensemble([ (e[0], self*e[1]) for e in s.states ])
         assert(type(s) == state)
         assert(s.nbits == self.nbits)
         timing={}
