@@ -34,21 +34,40 @@ def _cache_init(nbits):
         c["hmask"]=[ np.array([ p[getbit(l,i)] for l in range(N) ]) for i in range(nbits) ]
         _cache[nbits] = c
 
+def _M(q,c,s,o):
+    s,b=s.measure(q)
+    o.cval=setbit(o.cval,c,b)
+    o.skip = False if o.cif is None else o.cif != o.cval
+    return s
+
+def _IF(cif,s,o):
+    o.cif=cif
+    o.skip = False if o.cif is None else o.cif != o.cval
+    return s
+
 def _H(i,s,o):
+    if o.skip:
+        return s
     n=s.nbits
     c=1.0/2.0**0.5
     return state(n,c*(s.v[o.sbmask0[i]] + o.hmask[i]*s.v[o.sbmask1[i]]),basis=s.basis)
 
 def _X(i,s,o):
+    if o.skip:
+        return s
     n=s.nbits
     return state(n,s.v[o.notmask[i]],basis=s.basis)
 
 def _Rz(i,phi,s,o):
+    if o.skip:
+        return s
     n=s.nbits
     return state(n,(o.onemask[i]*np.exp(1j*phi)
                     + o.zeromask[i])*s.v,basis=s.basis)
 
 def _CNOT(i,j,s,o): # i is control, j is target
+    if o.skip:
+        return s
     n=s.nbits
     return state(n,s.v[o.cnotmask[i][j]],basis=s.basis)
 
@@ -72,6 +91,9 @@ class operator:
         self.hmask = _cache[self.nbits]["hmask"]
         self.verbose = False
         self.cache={}
+        self.cval=0
+        self.cif=None
+        self.skip=False
 
     def clone(self):
         return operator(self.nbits, copy.deepcopy(self.m))
@@ -119,6 +141,15 @@ class operator:
     def X(self, i):
         return self.NOT(i)
 
+    def M(self, q, c): # measures qubit q to classical bit c
+        return self.op(_M,[q,c],"M")
+
+    def IF(self, cif): # do following gates only if classical register is cif
+        return self.op(_IF,[cif],"IF")
+
+    def ENDIF(self):
+        return self.IF(None)
+
     # i is control bit and j is target bit
     def CNOT(self, i, j):
         assert(i!=j)
@@ -133,15 +164,23 @@ class operator:
             r=r+"include \"qelib1.inc\";\n"
         r=r+"qreg qr[%d];\n" % self.nbits
         r=r+"creg cr[%d];\n" % self.nbits
+        pfx=""
         for ops in self.m:
             if ops[2] == "H":
-                r=r+"h qr[%d];\n" % ops[1][0]
+                r=r+pfx+"h qr[%d];\n" % ops[1][0]
             elif ops[2] == "X":
-                r=r+"x qr[%d];\n" % ops[1][0]
+                r=r+pfx+"x qr[%d];\n" % ops[1][0]
             elif ops[2] == "Rz":
-                r=r+"rz(%.15g*pi) qr[%d];\n" % (ops[1][1]/np.pi,ops[1][0])
+                r=r+pfx+"rz(%.15g*pi) qr[%d];\n" % (ops[1][1]/np.pi,ops[1][0])
             elif ops[2] == "CNOT":
-                r=r+"cx qr[%d],qr[%d];\n" % (ops[1][0],ops[1][1])
+                r=r+pfx+"cx qr[%d],qr[%d];\n" % (ops[1][0],ops[1][1])
+            elif ops[2] == "IF":
+                if ops[1][0] == None:
+                    pfx=""
+                else:
+                    pfx="if (cr==%d) " % ops[1][0]
+            elif ops[2] == "M":
+                r=r+"measure qr[%d] -> cr[%d];\n" % (ops[1][0],ops[1][1])
             else:
                 assert(0)
         if measure:

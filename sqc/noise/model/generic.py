@@ -17,7 +17,7 @@ class generic:
                 print("Noise model incomplete: %s" % o[2])
                 assert(0)
             st0=self.noisy_gates[o[2]](o[0],o[1],st0,op)
-
+            
         for i,e in enumerate(self.readout_errors):
             assert(e <= 0.5)
             x=np.random.uniform()
